@@ -1,0 +1,143 @@
+{
+ "scans": [
+  {
+   "scan_id": "1f982a77",
+   "source": "test_50_000520.jpg",
+   "time": "2026-11-23T17:38:15+00:00",
+   "nav": {
+    "lat": 12.9716,
+    "lon": 77.5946,
+    "heading": 0.0,
+    "swath_m": 100.0,
+    "altitude": 10.0
+   },
+   "n_detections": 0
+  },
+  {
+   "scan_id": "162b1a1d",
+   "source": "test_50_000520.jpg",
+   "time": "2026-11-23T17:38:27+00:00",
+   "nav": {
+    "lat": 12.9716,
+    "lon": 77.5946,
+    "heading": 0.0,
+    "swath_m": 100.0,
+    "altitude": 10.0
+   },
+   "n_detections": 1
+  },
+  {
+   "scan_id": "6dc4ecda",
+   "source": "test_50_000520.jpg",
+   "time": "2026-11-23T17:38:35+00:00",
+   "nav": {
+    "lat": 12.9716,
+    "lon": 77.5946,
+    "heading": 0.0,
+    "swath_m": 100.0,
+    "altitude": 10.0
+   },
+   "n_detections": 1
+  }
+ ],
+ "detections": [
+  {
+   "kind": "known_target",
+   "class": "shipwreck",
+   "target": "SHIPWRECK",
+   "category": "Debris (man-made)",
+   "confidence": 0.258,
+   "anomaly_score": 0.18,
+   "box": [
+    210.8,
+    165.7,
+    477.0,
+    459.4
+   ],
+   "lat": 12.97161,
+   "lon": 77.594634,
+   "size_m": [
+    41.6,
+    45.9
+   ],
+   "height_m": null,
+   "evidence": [
+    {
+     "name": "Non-natural shape",
+     "detail": "13% of edges on straight segments",
+     "score": 0.13,
+     "present": false
+    },
+    {
+     "name": "Strong / structured return",
+     "detail": "target strength 2.3\u03c3 above seabed, edge density 0.25",
+     "score": 0.56,
+     "present": true
+    },
+    {
+     "name": "Target\u2013shadow consistency",
+     "detail": "shadow on port side, contrast 0.1\u03c3, length \u22480.0 m",
+     "score": 0.07,
+     "present": false
+    }
+   ],
+   "status": "Probable False Positive",
+   "fp_reason": "low confidence and seabed-like features",
+   "id": "DET-0001",
+   "scan_id": "162b1a1d",
+   "source": "test_50_000520.jpg",
+   "time": "2026-11-23T17:38:27+00:00",
+   "review": null,
+   "reviewer_note": ""
+  },
+  {
+   "kind": "known_target",
+   "class": "shipwreck",
+   "target": "SHIPWRECK",
+   "category": "Debris (man-made)",
+   "confidence": 0.258,
+   "anomaly_score": 0.18,
+   "box": [
+    210.8,
+    165.7,
+    477.0,
+    459.4
+   ],
+   "lat": 12.97161,
+   "lon": 77.594634,
+   "size_m": [
+    41.6,
+    45.9
+   ],
+   "height_m": null,
+   "evidence": [
+    {
+     "name": "Non-natural shape",
+     "detail": "13% of edges on straight segments",
+     "score": 0.13,
+     "present": false
+    },
+    {
+     "name": "Strong / structured return",
+     "detail": "target strength 2.3\u03c3 above seabed, edge density 0.25",
+     "score": 0.56,
+     "present": true
+    },
+    {
+     "name": "Target\u2013shadow consistency",
+     "detail": "shadow on port side, contrast 0.1\u03c3, length \u22480.0 m",
+     "score": 0.07,
+     "present": false
+    }
+   ],
+   "status": "Probable False Positive",
+   "fp_reason": "low confidence and seabed-like features",
+   "id": "DET-0002",
+   "scan_id": "6dc4ecda",
+   "source": "test_50_000520.jpg",
+   "time": "2026-11-23T17:38:35+00:00",
+   "review": null,
+   "reviewer_note": ""
+  }
+ ]
+}

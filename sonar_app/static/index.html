@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vantyx · Sonar AI Debris & Anomaly Detection</title>
+<link rel="stylesheet" href="/static/vendor/leaflet.css">
+<script src="/static/vendor/leaflet.js"></script>
+<script src="/static/vendor/leaflet-heat.js"></script>
+<style>
+:root{--bg:#05080a;--panel:#0b1114;--line:#17352a;--g:#39ff7a;--g2:#1fbf5a;--dim:#7d9a8c;--txt:#d9f5e4;--amber:#ffc23d;--red:#ff5c5c;--cyan:#38d6ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 "Segoe UI",Roboto,system-ui,sans-serif}
+header{display:flex;align-items:center;gap:16px;padding:12px 22px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#071a12,#05080a)}
+header h1{font-size:18px;margin:0;letter-spacing:.3px}
+header h1 span{color:var(--g)}
+.chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--dim)}
+.chip b{color:var(--g)}
+.spacer{flex:1}
+.flow{display:flex;gap:6px;padding:10px 22px;border-bottom:1px solid var(--line);overflow-x:auto;font-size:12px}
+.flow div{padding:6px 12px;border:1px solid var(--line);border-radius:6px;color:var(--dim);white-space:nowrap;transition:.3s}
+.flow div.on{color:#001b0a;background:var(--g);border-color:var(--g);font-weight:600}
+.flow i{color:var(--line);align-self:center;font-style:normal}
+main{display:grid;grid-template-columns:300px 1fr 400px;gap:14px;padding:14px 22px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.panel h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--g);margin:0 0 10px}
+label{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
+input,select{width:100%;background:#050b08;border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:7px 8px;font:inherit}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button{background:var(--g2);color:#001b0a;border:0;border-radius:6px;padding:9px 14px;font-weight:700;cursor:pointer;font:inherit;font-weight:700}
+button:hover{filter:brightness(1.15)}
+button.ghost{background:transparent;color:var(--g);border:1px solid var(--g2)}
+button.red{background:transparent;color:var(--red);border:1px solid var(--red)}
+button:disabled{opacity:.5;cursor:wait}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;max-height:220px;overflow:auto;margin-top:6px}
+.thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border:2px solid transparent;border-radius:4px;cursor:pointer;opacity:.75}
+.thumbs img.sel,.thumbs img:hover{border-color:var(--g);opacity:1}
+.drop{border:1px dashed var(--g2);border-radius:8px;padding:14px;text-align:center;color:var(--dim);cursor:pointer;font-size:12px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{background:transparent;border:1px solid var(--line);color:var(--dim);padding:5px 10px;font-weight:500;font-size:12px}
+.tabs button.on{border-color:var(--g);color:var(--g)}
+.viewer{position:relative;background:#000;border:1px solid var(--line);border-radius:8px;min-height:420px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.viewer img{max-width:100%;max-height:70vh;display:block}
+.viewer .empty{color:var(--dim);padding:40px;text-align:center}
+.caption{font-size:12px;color:var(--dim);margin-top:8px;min-height:34px}
+.det{border:1px solid var(--g2);border-radius:8px;margin-bottom:12px;background:#030805;font-family:Consolas,"Courier New",monospace;font-size:12.5px}
+.det.fp{border-color:#555}.det.unk{border-color:var(--cyan)}
+.det.confirmed{border-color:var(--g);box-shadow:0 0 0 1px var(--g)}.det.rejected{opacity:.55;border-color:var(--red)}
+.det .hd{padding:6px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;color:var(--g)}
+.det .bd{display:grid;grid-template-columns:110px 1fr;gap:10px;padding:10px}
+.det .bd img{width:110px;border:1px solid var(--line)}
+.det .kv div{margin-bottom:3px}.det .kv span{color:var(--dim)}
+.det .ev{padding:8px 10px;border-top:1px solid var(--line)}
+.det .ev div{display:flex;gap:6px}.det .ev .ok{color:var(--g)}.det .ev .no{color:#555}
+.det .ev small{color:var(--dim);display:block;margin-left:18px;margin-bottom:3px}
+.det .hv{padding:8px 10px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center}
+.det .hv button{padding:5px 12px;font-size:12px}
+.st{font-weight:700}.st.need{color:var(--amber)}.st.fp{color:#999}.st.Confirmed{color:var(--g)}.st.Rejected{color:var(--red)}
+#dets{max-height:calc(100vh - 210px);overflow:auto;padding-right:4px}
+.lower{display:grid;grid-template-columns:1.2fr 1fr;gap:14px;padding:0 22px 22px}
+#map{height:380px;border-radius:8px;border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td,th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--dim);font-weight:500}
+.tblwrap{max-height:300px;overflow:auto}
+.stats{display:flex;gap:10px;margin-bottom:10px}
+.stats div{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center;font-size:11px;color:var(--dim)}
+.stats b{display:block;font-size:20px;color:var(--txt)}
+.exports{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.exports button{font-size:12px;padding:6px 10px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #001b0a;border-top-color:transparent;border-radius:50%;animation:s 1s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes s{to{transform:rotate(360deg)}}
+.leaflet-container{background:#0a1a24}
+@media(max-width:1200px){main{grid-template-columns:1fr}.lower{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1><span>◉ Vantyx</span> · AI Side-Scan Sonar Debris &amp; Anomaly Detection</h1>
+  <div class="spacer"></div>
+  <div class="chip" id="modelChip">loading model…</div>
+  <div class="chip">SIH26057</div>
+</header>
+
+<div class="flow" id="flow">
+  <div data-s="0">1 · Side-scan sonar ingest</div><i>→</i>
+  <div data-s="1">2 · Pre-processing</div><i>→</i>
+  <div data-s="2">3 · AI analysis: known targets + unknown anomalies</div><i>→</i>
+  <div data-s="3">4 · Geolocation</div><i>→</i>
+  <div data-s="4">5 · Human verification</div><i>→</i>
+  <div data-s="5">6 · GIS / Report</div>
+</div>
+
+<main>
+  <section class="panel">
+    <h2>Ingest sonar tile</h2>
+    <div class="drop" id="drop">Drop a side-scan sonar image here<br>or click to upload</div>
+    <input type="file" id="file" accept="image/*" hidden>
+    <label>…or pick a held-out test tile (never seen in training)</label>
+    <div class="thumbs" id="thumbs"></div>
+
+    <h2 style="margin-top:16px">Survey navigation</h2>
+    <div class="row">
+      <div><label>Tile centre latitude</label><input id="lat" type="number" step="0.0001" value="12.9716"></div>
+      <div><label>Tile centre longitude</label><input id="lon" type="number" step="0.0001" value="77.5946"></div>
+    </div>
+    <div class="row">
+      <div><label>Heading (°)</label><input id="heading" type="number" value="0"></div>
+      <div><label>Swath width (m)</label><input id="swath" type="number" value="100"></div>
+    </div>
+    <div class="row">
+      <div><label>Towfish altitude (m)</label><input id="alt" type="number" value="10"></div>
+      <div><label>Min confidence</label><input id="conf" type="number" step="0.05" min="0.05" max="0.95" value="0.30"></div>
+    </div>
+    <button id="run" style="width:100%;margin-top:14px">Run AI analysis</button>
+    <div class="caption" id="runInfo"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Sonar AI detection result</h2>
+    <div class="tabs" id="tabs">
+      <button data-k="input">1. Input signal</button>
+      <button data-k="preprocessed">2. Pre-processed</button>
+      <button data-k="activation">3. Mamba-Transformer activation</button>
+      <button data-k="detection_heatmap">4. Known-target heatmap</button>
+      <button data-k="anomaly">5. Anomaly map</button>
+      <button data-k="result" class="on">6. Unified output</button>
+    </div>
+    <div class="viewer" id="viewer"><div class="empty">Choose a tile and press <b>Run AI analysis</b>.</div></div>
+    <div class="caption" id="caption"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Detections (<span id="ndet">0</span>)</h2>
+    <div id="dets"><div class="caption">No detections yet.</div></div>
+  </section>
+</main>
+
+<div class="lower">
+  <section class="panel">
+    <h2>GIS · debris map &amp; hotspots</h2>
+    <div id="map"></div>
+  </section>
+  <section class="panel">
+    <h2>Survey log &amp; report</h2>
+    <div class="stats">
+      <div><b id="sTot">0</b>detections</div>
+      <div><b id="sConf" style="color:var(--g)">0</b>confirmed</div>
+      <div><b id="sRej" style="color:var(--red)">0</b>rejected</div>
+      <div><b id="sPend" style="color:var(--amber)">0</b>to review</div>
+    </div>
+    <div class="tblwrap"><table><thead><tr><th>ID</th><th>Target</th><th>Conf</th><th>Anom</th><th>Lat, Lon</th><th>Status</th></tr></thead><tbody id="tbl"></tbody></table></div>
+    <div class="exports">
+      <button class="ghost" onclick="location='/api/export/geojson'">⬇ GeoJSON (GIS)</button>
+      <button class="ghost" onclick="location='/api/export/csv'">⬇ CSV</button>
+      <button class="ghost" onclick="location='/api/export/json'">⬇ JSON</button>
+      <button onclick="window.open('/api/report')">🖨 Survey report</button>
+      <button class="red" onclick="clearAll()">Clear log</button>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let selSample = null, upFile = null, last = null, view = 'result', all = [];
+const captions = {
+  input: 'Raw side-scan sonar tile as received (any device / colour palette).',
+  preprocessed: 'Palette → intensity, median despeckle, CLAHE gain normalisation. This is exactly what the model sees.',
+  activation: 'Token energy after the CNN stem → bidirectional Mamba (selective state-space) → Transformer global attention.',
+  detection_heatmap: 'Known-target centre heatmap (max over aircraft / fish / other / shipwreck heads).',
+  anomaly: 'Unknown-anomaly map: Mahalanobis distance of each patch from the learned "normal seabed" feature distribution. 0.5 ≈ top-1% unusual.',
+  result: 'Green = known debris target · cyan = unknown anomaly · grey = probable false positive.'
+};
+function flow(n){ document.querySelectorAll('#flow div').forEach(d => d.classList.toggle('on', +d.dataset.s <= n)); }
+
+// ---------- model + samples
+fetch('/api/model').then(r=>r.json()).then(m=>{
+  const t = m.metrics.test || {};
+  $('#modelChip').innerHTML = `Hybrid CNN·Mamba·Transformer · ${m.params_m}M params · test mAP@.5 <b>${(t.mAP50*100||0).toFixed(1)}%</b> · object-vs-seabed AP@.5 <b>${((t.AP50_class_agnostic||0)*100).toFixed(1)}%</b>`;
+});
+fetch('/api/samples').then(r=>r.json()).then(list=>{
+  $('#thumbs').innerHTML = list.map(n=>`<img loading="lazy" src="/samples/${n}" title="${n}" data-n="${n}">`).join('');
+  $('#thumbs').onclick = e => { if(!e.target.dataset.n) return;
+    document.querySelectorAll('#thumbs img').forEach(i=>i.classList.remove('sel'));
+    e.target.classList.add('sel'); selSample = e.target.dataset.n; upFile = null;
+    $('#drop').textContent = 'Drop a side-scan sonar image here or click to upload'; flow(0);
+    $('#viewer').innerHTML = `<img src="/samples/${selSample}">`; $('#caption').textContent = 'Selected: ' + selSample; };
+});
+$('#drop').onclick = () => $('#file').click();
+$('#file').onchange = e => setFile(e.target.files[0]);
+$('#drop').ondragover = e => { e.preventDefault(); };
+$('#drop').ondrop = e => { e.preventDefault(); setFile(e.dataTransfer.files[0]); };
+function setFile(f){ if(!f) return; upFile = f; selSample = null;
+  document.querySelectorAll('#thumbs img').forEach(i=>i.classList.remove('sel'));
+  $('#drop').textContent = '📄 ' + f.name; flow(0);
+  $('#viewer').innerHTML = `<img src="${URL.createObjectURL(f)}">`; }
+
+// ---------- analysis
+$('#run').onclick = async () => {
+  if(!selSample && !upFile){ alert('Pick a sample tile or upload an image first.'); return; }
+  const fd = new FormData();
+  if(upFile) fd.append('file', upFile); else fd.append('sample', selSample);
+  fd.append('lat', $('#lat').value); fd.append('lon', $('#lon').value); fd.append('heading', $('#heading').value);
+  fd.append('swath_m', $('#swath').value); fd.append('altitude', $('#alt').value); fd.append('conf', $('#conf').value);
+  $('#run').disabled = true; $('#run').innerHTML = '<span class="spin"></span>Analysing…'; flow(1);
+  try {
+    const r = await fetch('/api/analyze', {method:'POST', body:fd});
+    if(!r.ok) throw new Error((await r.json()).detail);
+    last = await r.json(); flow(2); setTimeout(()=>flow(3),250); setTimeout(()=>flow(4),500);
+    $('#runInfo').textContent = `${last.source} · ${last.image_size.join('×')} px · ${last.elapsed_ms} ms · ${last.detections.length} finding(s)`;
+    show(view); renderDets(last.detections); await refresh(true);
+  } catch(e){ alert('Analysis failed: ' + e.message); }
+  $('#run').disabled = false; $('#run').textContent = 'Run AI analysis';
+};
+$('#tabs').onclick = e => { if(!e.target.dataset.k) return; view = e.target.dataset.k;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b===e.target)); if(last) show(view); };
+function show(k){ $('#viewer').innerHTML = `<img src="${last.images[k]}">`; $('#caption').textContent = captions[k]; }
+
+function pct(v){ return v==null ? '—' : (v*100).toFixed(0)+'%'; }
+function stClass(s){ return s==='Needs Verification'?'need': s==='Probable False Positive'?'fp': s; }
+function renderDets(ds){
+  $('#ndet').textContent = ds.length;
+  if(!ds.length){ $('#dets').innerHTML = '<div class="caption">No targets or anomalies above threshold in this tile. Try lowering the minimum confidence.</div>'; return; }
+  $('#dets').innerHTML = ds.map((d,i)=>{
+    const cls = d.kind==='unknown_anomaly'?'unk': d.status==='Probable False Positive'?'fp':'';
+    const rev = d.review ? d.review : '';
+    return `<div class="det ${cls} ${rev}" id="c-${d.id}">
+      <div class="hd"><span>DETECTION #${String(i+1).padStart(2,'0')} · ${d.id}</span><span>${d.kind==='unknown_anomaly'?'UNKNOWN':'KNOWN TARGET'}</span></div>
+      <div class="bd">${d.crop?`<img src="${d.crop}">`:'<div></div>'}<div class="kv">
+        <div><span>Target :</span> ${d.target} → ${d.category}</div>
+        <div><span>Confidence Score :</span> ${pct(d.confidence)}</div>
+        <div><span>Anomaly Score :</span> ${d.anomaly_score.toFixed(2)}</div>
+        <div><span>Location :</span> ${Math.abs(d.lat).toFixed(4)}° ${d.lat>=0?'N':'S'}, ${Math.abs(d.lon).toFixed(4)}° ${d.lon>=0?'E':'W'}</div>
+        <div><span>Estimated Size :</span> ${d.size_m[0]} m × ${d.size_m[1]} m${d.height_m?` · h≈${d.height_m} m`:''}</div>
+        <div><span>Status :</span> <span class="st ${stClass(d.status)}">${d.status}</span></div>
+        ${d.fp_reason?`<div><span>FP diagnosis :</span> ${d.fp_reason}</div>`:''}
+      </div></div>
+      <div class="ev"><div style="color:var(--dim)">AI Evidence:</div>${d.evidence.map((e,j)=>`<div class="${e.present?'ok':'no'}">${e.present?'✔':'✖'} ${j+1}. ${e.name}</div><small>${e.detail}</small>`).join('')}</div>
+      <div class="hv"><span style="color:var(--dim)">HUMAN VERIFICATION</span><div class="spacer"></div>
+        <button onclick="reviewDet('${d.id}','confirmed')">✔ CONFIRM</button>
+        <button class="red" onclick="reviewDet('${d.id}','rejected')">✖ REJECT</button></div>
+    </div>`; }).join('');
+}
+async function reviewDet(id, decision){
+  const r = await fetch(`/api/detections/${id}/review`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({decision})});
+  const d = await r.json();
+  if(last){ const x = last.detections.find(z=>z.id===id); if(x){ Object.assign(x, {review:d.review, status:d.status}); renderDets(last.detections);} }
+  flow(5); refresh(false);
+}
+
+// ---------- map + log
+const map = L.map('map').setView([12.9716, 77.5946], 15);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {attribution:'© OpenStreetMap © CARTO', maxZoom:20}).addTo(map);
+const markers = L.layerGroup().addTo(map); let heat = null;
+const colour = d => d.review==='confirmed' ? '#39ff7a' : d.review==='rejected' ? '#ff5c5c' : d.kind==='unknown_anomaly' ? '#38d6ff' : d.status==='Probable False Positive' ? '#888' : '#ffc23d';
+async function refresh(fit){
+  all = await (await fetch('/api/detections')).json();
+  markers.clearLayers();
+  all.forEach(d => L.circleMarker([d.lat, d.lon], {radius:7, color:colour(d), fillOpacity:.8, weight:2})
+    .bindPopup(`<b>${d.id}</b> ${d.target}<br>${d.category}<br>conf ${pct(d.confidence)} · anomaly ${d.anomaly_score}<br>${d.size_m[0]}×${d.size_m[1]} m<br><b>${d.status}</b><br><small>${d.source}</small>`).addTo(markers));
+  if(heat) map.removeLayer(heat);
+  const pts = all.filter(d=>d.review!=='rejected' && d.status!=='Probable False Positive').map(d=>[d.lat, d.lon, Math.max(d.confidence||0, d.anomaly_score)]);
+  if(pts.length && L.heatLayer) heat = L.heatLayer(pts, {radius:35, blur:25, maxZoom:18}).addTo(map);
+  if(fit && last && last.detections.length) map.fitBounds(L.latLngBounds(last.detections.map(d=>[d.lat,d.lon])).pad(0.6), {maxZoom:18});
+  else if(fit && last) map.setView([last.nav.lat, last.nav.lon], 17);
+  $('#sTot').textContent = all.length;
+  $('#sConf').textContent = all.filter(d=>d.review==='confirmed').length;
+  $('#sRej').textContent = all.filter(d=>d.review==='rejected').length;
+  $('#sPend').textContent = all.filter(d=>!d.review).length;
+  $('#tbl').innerHTML = all.slice().reverse().map(d=>`<tr><td>${d.id}</td><td>${d.target}</td><td>${pct(d.confidence)}</td><td>${d.anomaly_score.toFixed(2)}</td><td>${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}</td><td class="st ${stClass(d.status)}">${d.status}</td></tr>`).join('');
+}
+async function clearAll(){ if(!confirm('Clear all logged detections?')) return; await fetch('/api/detections',{method:'DELETE'}); refresh(false); }
+refresh(false);
+</script>
+</body>
+</html>
